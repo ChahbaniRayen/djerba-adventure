@@ -21,8 +21,8 @@ const Hero: React.FC = () => {
         </h1>
 
         <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-2xl mx-auto leading-relaxed">
-          Réservez vos activités d'aventure et explorez les merveilles de l'île
-          de Djerba
+          Réservez vos activités d&apos;aventure et explorez les merveilles de
+          l&apos;île de Djerba
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

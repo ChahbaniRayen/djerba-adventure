@@ -15,8 +15,12 @@ const Footer: React.FC = () => {
         <div className="grid md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <MapPin className="h-8 w-8 text-sky-400" />
-              <span className="text-xl font-bold">Djerba Adventures</span>
+              <img
+                src="/logo.png"
+                alt="Luxury Djerba Adventure"
+                className="h-8 w-8 object-contain"
+              />
+              <span className="text-xl font-bold">Luxury Djerba Adventure</span>
             </div>
             <p className="text-gray-300 leading-relaxed">
               Votre partenaire de confiance pour découvrir les merveilles de
@@ -33,7 +37,7 @@ const Footer: React.FC = () => {
                   href="#activities"
                   className="hover:text-sky-400 transition-colors duration-200"
                 >
-                  Activités d'aventure
+                  Activités d&apos;aventure
                 </a>
               </li>
               <li>
@@ -105,7 +109,7 @@ const Footer: React.FC = () => {
             </div>
             <div className="mt-4">
               <p className="text-sm text-gray-400">
-                Certifié par l'Office National du Tourisme Tunisien
+                Certifié par l&apos;Office National du Tourisme Tunisien
               </p>
             </div>
           </div>
@@ -113,7 +117,7 @@ const Footer: React.FC = () => {
 
         <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-400 text-sm">
-            © 2024 Djerba Adventures. Tous droits réservés.
+            © 2024 Luxury Djerba Adventure. Tous droits réservés.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <a

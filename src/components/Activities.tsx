@@ -1,80 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Clock } from "lucide-react";
+import { urlFor } from "@/lib/sanity/queries";
+import Reviews from "./Reviews";
 
 interface Activity {
-  id: string;
+  _id: string;
   name: string;
   description: string;
   price: number;
   duration: string;
-  image: string;
+  image: { asset: { _ref: string; _type: string } };
   available: boolean;
+  slug: { current: string };
 }
 
 const Activities: React.FC = () => {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
     null
   );
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
-  const activities: Activity[] = [
-    {
-      id: "horse",
-      name: "Balade à Cheval",
-      description: "Explorez les plages et dunes de Djerba à cheval",
-      price: 45,
-      duration: "2h",
-      image:
-        "https://images.pexels.com/photos/1996333/pexels-photo-1996333.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
-      available: true,
-    },
-    {
-      id: "quad",
-      name: "Excursion Quad",
-      description: "Aventure palpitante en quad à travers le désert",
-      price: 65,
-      duration: "3h",
-      image:
-        "https://images.pexels.com/photos/163811/desert-sand-dune-landscape-163811.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
-      available: true,
-    },
-    {
-      id: "buggy",
-      name: "Safari Buggy",
-      description: "Découvrez l'arrière-pays en buggy tout-terrain",
-      price: 85,
-      duration: "4h",
-      image:
-        "https://images.pexels.com/photos/1563356/pexels-photo-1563356.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
-      available: true,
-    },
-    {
-      id: "jetski",
-      name: "Jet-Ski",
-      description: "Sensations fortes sur les eaux cristallines",
-      price: 75,
-      duration: "1h",
-      image:
-        "https://images.pexels.com/photos/1422673/pexels-photo-1422673.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
-      available: true,
-    },
-    {
-      id: "parachute",
-      name: "Parachute Ascensionnel",
-      description: "Admirez Djerba depuis les airs",
-      price: 95,
-      duration: "30min",
-      image:
-        "https://images.pexels.com/photos/1647962/pexels-photo-1647962.jpeg?auto=compress&cs=tinysrgb&w=800&h=600&fit=crop",
-      available: false,
-    },
-  ];
+  const truncateDescription = (text: string, maxLines: number = 2): string => {
+    const lines = text.split("\n").filter((line) => line.trim());
+    if (lines.length <= maxLines) return text;
+    return lines.slice(0, maxLines).join("\n") + "...";
+  };
+
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  const fetchActivities = async () => {
+    try {
+      const res = await fetch("/api/activities");
+      const data = await res.json();
+      setActivities(data.activities || []);
+    } catch (error) {
+      console.error("Error fetching activities:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onViewDetails = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setIsDetailsOpen(true);
+  };
 
   const onBookActivity = (activity: Activity) => {
+    if (!session) {
+      router.push("/auth/signin");
+      return;
+    }
     setSelectedActivity(activity);
     setIsBookingOpen(true);
     setMessage("");
@@ -82,19 +70,25 @@ const Activities: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedActivity) return;
+    if (!selectedActivity || !session) {
+      router.push("/auth/signin");
+      return;
+    }
 
     const form = e.target as HTMLFormElement;
     const reservation = {
-      activityId: selectedActivity.id,
-      name: selectedActivity.name,
+      activityId: selectedActivity._id,
+      activityName: selectedActivity.name,
+      activityType: "activity",
       date: (form.date as HTMLInputElement).value,
       time: (form.time as HTMLInputElement).value,
       participants: (form.participants as HTMLInputElement).value,
+      phone: (form.phone as HTMLInputElement)?.value || "",
+      notes: (form.notes as HTMLTextAreaElement)?.value || "",
     };
 
     try {
-      setLoading(true);
+      setSubmitting(true);
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -103,27 +97,42 @@ const Activities: React.FC = () => {
 
       const data = await res.json();
       if (res.ok) {
-        setMessage("✅ Réservation confirmée !");
+        setMessage(
+          "✅ Demande de réservation envoyée ! Vous recevrez une confirmation par email."
+        );
         form.reset();
+        setTimeout(() => {
+          setIsBookingOpen(false);
+        }, 2000);
       } else {
         setMessage("❌ Erreur : " + data.message);
       }
     } catch (error) {
       setMessage("⚠️ Erreur serveur");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  if (loading) {
+    return (
+      <section id="activities" className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-black">Chargement des activités...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="activities" className="py-20 bg-gray-50 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Titre */}
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Activités d'Aventure
+          <h2 className="text-3xl md:text-4xl font-bold text-black mb-4">
+            Activités d&apos;Aventure
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-black max-w-2xl mx-auto">
             Choisissez parmi nos activités palpitantes pour une expérience
             inoubliable
           </p>
@@ -133,13 +142,13 @@ const Activities: React.FC = () => {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {activities.map((activity) => (
             <div
-              key={activity.id}
+              key={activity._id}
               className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300"
             >
               {/* Image */}
               <div className="relative">
                 <img
-                  src={activity.image}
+                  src={urlFor(activity.image)}
                   alt={activity.name}
                   className="w-full h-48 object-cover"
                 />
@@ -154,13 +163,21 @@ const Activities: React.FC = () => {
 
               {/* Infos */}
               <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 className="text-xl font-bold text-black mb-2">
                   {activity.name}
                 </h3>
-                <p className="text-gray-600 mb-4">{activity.description}</p>
+                <p className="text-black mb-4 line-clamp-2">
+                  {truncateDescription(activity.description)}
+                </p>
+                <button
+                  onClick={() => onViewDetails(activity)}
+                  className="text-sky-600 hover:text-sky-700 text-sm font-medium mb-4"
+                >
+                  Voir plus →
+                </button>
 
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center text-gray-500 text-sm">
+                  <div className="flex items-center text-black text-sm">
                     <Clock className="h-4 w-4 mr-1" />
                     {activity.duration}
                   </div>
@@ -189,41 +206,166 @@ const Activities: React.FC = () => {
         </div>
       </div>
 
+      {/* Modal détails */}
+      {isDetailsOpen && selectedActivity && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 overflow-y-auto p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsDetailsOpen(false);
+            }
+          }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-5xl my-8 relative max-h-[95vh] overflow-y-auto">
+            <button
+              onClick={() => setIsDetailsOpen(false)}
+              className="absolute top-6 right-6 text-gray-600 hover:text-gray-900 hover:bg-red-100 rounded-full p-2 transition-all duration-200 text-2xl w-10 h-10 flex items-center justify-center font-bold z-10"
+              aria-label="Fermer"
+            >
+              ✕
+            </button>
+
+            <div className="mb-8">
+              <div className="relative rounded-xl overflow-hidden mb-6 shadow-lg">
+                <img
+                  src={urlFor(selectedActivity.image)}
+                  alt={selectedActivity.name}
+                  className="w-full h-80 object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+              </div>
+
+              <h2 className="text-4xl font-bold text-black mb-2">
+                {selectedActivity.name}
+              </h2>
+
+              <div className="flex flex-wrap items-center gap-4 mb-6 pt-2">
+                <div className="flex items-center text-sky-700 bg-sky-50 px-4 py-2 rounded-full">
+                  <Clock className="h-5 w-5 mr-2" />
+                  <span className="font-semibold">
+                    {selectedActivity.duration}
+                  </span>
+                </div>
+                <div className="text-4xl font-bold text-sky-600 bg-gradient-to-r from-sky-500 to-cyan-500 bg-clip-text text-transparent">
+                  {selectedActivity.price}€
+                </div>
+                {selectedActivity.available ? (
+                  <span className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-semibold border border-emerald-200">
+                    ✓ Disponible
+                  </span>
+                ) : (
+                  <span className="px-4 py-2 bg-gray-100 text-black rounded-full text-sm font-semibold border border-gray-200">
+                    Non disponible
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-gradient-to-br from-gray-50 to-sky-50 rounded-xl p-6 mb-6 border border-sky-100">
+                <h3 className="text-2xl font-bold text-black mb-4 flex items-center">
+                  <span className="w-1 h-8 bg-gradient-to-b from-sky-500 to-cyan-500 rounded-full mr-3"></span>
+                  Description
+                </h3>
+                <p className="text-black whitespace-pre-line leading-relaxed text-lg">
+                  {selectedActivity.description}
+                </p>
+              </div>
+
+              <div className="flex gap-4 mb-8">
+                <button
+                  onClick={() => {
+                    setIsDetailsOpen(false);
+                    onBookActivity(selectedActivity);
+                  }}
+                  disabled={!selectedActivity.available}
+                  className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg ${
+                    selectedActivity.available
+                      ? "bg-gradient-to-r from-sky-500 to-cyan-500 text-white hover:from-sky-600 hover:to-cyan-600 hover:shadow-xl transform hover:-translate-y-0.5"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  Réserver maintenant
+                </button>
+              </div>
+            </div>
+
+            {/* Avis */}
+            <div className="border-t-2 border-sky-200 pt-8">
+              <Reviews
+                activityId={selectedActivity._id}
+                activityType="activity"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal réservation */}
       {isBookingOpen && selectedActivity && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md relative">
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsBookingOpen(false);
+            }
+          }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md relative">
+            <button
+              onClick={() => setIsBookingOpen(false)}
+              className="absolute top-6 right-6 text-gray-600 hover:text-gray-900 hover:bg-red-100 rounded-full p-2 transition-all duration-200 text-2xl w-10 h-10 flex items-center justify-center font-bold z-10"
+              aria-label="Fermer"
+            >
+              ✕
+            </button>
+
             <h3 className="text-2xl font-bold mb-4">
               Réserver : {selectedActivity.name}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-black">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  defaultValue={session?.user?.email || ""}
+                  required
+                  className="mt-1 w-full border rounded-lg p-2 bg-gray-50 text-black"
+                  readOnly
+                />
+                <p className="mt-1 text-xs text-black">
+                  Email de votre compte connecté
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black">
                   Date
                 </label>
                 <input
                   type="date"
                   name="date"
                   required
-                  className="mt-1 w-full border rounded-lg p-2"
+                  className="mt-1 w-full border rounded-lg p-2 text-black"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-black">
                   Heure
                 </label>
                 <input
                   type="time"
                   name="time"
                   required
-                  className="mt-1 w-full border rounded-lg p-2"
+                  className="mt-1 w-full border rounded-lg p-2 text-black"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-black">
                   Participants
                 </label>
                 <input
@@ -232,7 +374,30 @@ const Activities: React.FC = () => {
                   min="1"
                   defaultValue="1"
                   required
-                  className="mt-1 w-full border rounded-lg p-2"
+                  className="mt-1 w-full border rounded-lg p-2 text-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black">
+                  Téléphone (optionnel)
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  className="mt-1 w-full border rounded-lg p-2 text-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-black">
+                  Notes (optionnel)
+                </label>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  className="mt-1 w-full border rounded-lg p-2 text-black"
+                  placeholder="Informations supplémentaires..."
                 />
               </div>
 
@@ -248,19 +413,12 @@ const Activities: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="w-full bg-sky-500 text-white py-3 rounded-lg font-semibold hover:bg-sky-600 disabled:opacity-50"
               >
-                {loading ? "Envoi..." : "Confirmer la réservation"}
+                {submitting ? "Envoi..." : "Envoyer la demande"}
               </button>
             </form>
-
-            <button
-              onClick={() => setIsBookingOpen(false)}
-              className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-            >
-              ✕
-            </button>
           </div>
         </div>
       )}
