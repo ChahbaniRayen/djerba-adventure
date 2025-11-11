@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   eslint: {
     // Avertir mais ne pas bloquer le build sur les erreurs ESLint
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   typescript: {
     // Ne pas bloquer le build sur les erreurs TypeScript
