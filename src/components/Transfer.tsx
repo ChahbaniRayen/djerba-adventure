@@ -161,13 +161,13 @@ const Transfer: React.FC = () => {
                 {option.image && (
                   <div className="mb-4">
                     <img
-                      src={urlFor(option.image)}
+                      src={urlFor(option.image) || undefined}
                       alt={option.name}
                       className="w-full h-32 object-cover rounded-lg"
                     />
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-black mb-3">
+                <h3 className="text-xl font-bold text-emerald-600 mb-3">
                   {option.name}
                 </h3>
                 <p className="text-black mb-2 line-clamp-2">
@@ -175,9 +175,12 @@ const Transfer: React.FC = () => {
                 </p>
                 <button
                   onClick={() => onViewDetails(option)}
-                  className="text-emerald-600 hover:text-emerald-700 text-sm font-medium mb-4"
+                  className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 text-sm font-semibold mb-4 transition-colors duration-200 group"
                 >
-                  Voir plus →
+                  <span>Voir plus</span>
+                  <span className="transform group-hover:translate-x-0.5 transition-transform duration-200">
+                    →
+                  </span>
                 </button>
 
                 <div className="flex items-center justify-between mb-4">
@@ -269,7 +272,7 @@ const Transfer: React.FC = () => {
               {selectedTransfer.image && (
                 <div className="relative rounded-xl overflow-hidden mb-6 shadow-lg">
                   <img
-                    src={urlFor(selectedTransfer.image)}
+                    src={urlFor(selectedTransfer.image) || undefined}
                     alt={selectedTransfer.name}
                     className="w-full h-80 object-cover"
                   />
@@ -277,7 +280,7 @@ const Transfer: React.FC = () => {
                 </div>
               )}
 
-              <h2 className="text-4xl font-bold text-black mb-2">
+              <h2 className="text-4xl font-bold text-emerald-600 mb-2">
                 {selectedTransfer.name}
               </h2>
 
@@ -362,7 +365,9 @@ const Transfer: React.FC = () => {
             </button>
 
             <h3 className="text-2xl font-bold mb-4">
-              Réserver : {selectedTransfer.name}
+              <span className="text-sky-500">
+                Réserver : {selectedTransfer.name}
+              </span>
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">

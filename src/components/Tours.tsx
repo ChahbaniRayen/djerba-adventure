@@ -148,15 +148,17 @@ const Tours: React.FC = () => {
                 className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 border border-gray-100"
               >
                 <div className="relative">
-                  <img
-                    src={urlFor(tour.image)}
-                    alt={tour.name}
-                    className="w-full h-48 object-cover"
-                  />
+                  {urlFor(tour.image) && (
+                    <img
+                      src={urlFor(tour.image)!}
+                      alt={tour.name}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
                 </div>
 
                 <div className="p-6">
-                  <h3 className="text-xl font-bold text-black mb-2">
+                  <h3 className="text-xl font-bold text-amber-600 mb-2">
                     {tour.name}
                   </h3>
                   <p className="text-black mb-2 line-clamp-2">
@@ -164,9 +166,12 @@ const Tours: React.FC = () => {
                   </p>
                   <button
                     onClick={() => onViewDetails(tour)}
-                    className="text-amber-600 hover:text-amber-700 text-sm font-medium mb-4"
+                    className="inline-flex items-center gap-1.5 text-amber-600 hover:text-amber-700 text-sm font-semibold mb-4 transition-colors duration-200 group"
                   >
-                    Voir plus →
+                    <span>Voir plus</span>
+                    <span className="transform group-hover:translate-x-0.5 transition-transform duration-200">
+                      →
+                    </span>
                   </button>
 
                   <div className="mb-4">
@@ -233,15 +238,17 @@ const Tours: React.FC = () => {
 
             <div className="mb-8">
               <div className="relative rounded-xl overflow-hidden mb-6 shadow-lg">
-                <img
-                  src={urlFor(selectedTour.image)}
-                  alt={selectedTour.name}
-                  className="w-full h-80 object-cover"
-                />
+                {urlFor(selectedTour.image) && (
+                  <img
+                    src={urlFor(selectedTour.image)!}
+                    alt={selectedTour.name}
+                    className="w-full h-80 object-cover"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
               </div>
 
-              <h2 className="text-4xl font-bold text-black mb-2">
+              <h2 className="text-4xl font-bold text-amber-600 mb-2">
                 {selectedTour.name}
               </h2>
 
@@ -321,7 +328,9 @@ const Tours: React.FC = () => {
             </button>
 
             <h3 className="text-2xl font-bold mb-4">
-              Réserver : {selectedTour.name}
+              <span className="text-sky-500">
+                Réserver : {selectedTour.name}
+              </span>
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">

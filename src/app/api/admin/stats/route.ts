@@ -69,6 +69,24 @@ export async function GET(req: Request) {
       },
     ]);
 
+    // Comptes non vérifiés
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const unverifiedAccounts = await User.countDocuments({
+      emailVerified: { $exists: false },
+      provider: "credentials",
+      $or: [
+        { createdAt: { $lt: sevenDaysAgo } },
+        { emailVerificationExpires: { $lt: sevenDaysAgo } },
+      ],
+    });
+
+    const totalUnverified = await User.countDocuments({
+      emailVerified: { $exists: false },
+      provider: "credentials",
+    });
+
     return NextResponse.json({
       totalBookings,
       pendingBookings,
@@ -76,6 +94,8 @@ export async function GET(req: Request) {
       rejectedBookings,
       activitiesStats,
       typeStats,
+      unverifiedAccounts,
+      totalUnverified,
     });
   } catch (error) {
     console.error("Error fetching stats:", error);

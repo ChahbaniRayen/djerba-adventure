@@ -21,5 +21,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     role?: "user" | "admin";
+    exp?: number; // Date d'expiration du token (timestamp Unix)
   }
 }

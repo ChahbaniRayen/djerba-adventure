@@ -39,6 +39,8 @@ interface Stats {
     type: string;
     count: number;
   }>;
+  unverifiedAccounts?: number;
+  totalUnverified?: number;
 }
 
 export default function AdminDashboard() {
@@ -48,6 +50,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [cleaningUp, setCleaningUp] = useState(false);
+  const [cleanupMessage, setCleanupMessage] = useState("");
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -105,6 +109,28 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error updating booking:", error);
+    }
+  };
+
+  const cleanupUnverifiedAccounts = async () => {
+    setCleaningUp(true);
+    setCleanupMessage("");
+    try {
+      const res = await fetch("/api/auth/cleanup-unverified", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCleanupMessage(`✅ ${data.deleted} compte(s) supprimé(s)`);
+        fetchStats();
+      } else {
+        setCleanupMessage("❌ Erreur lors du nettoyage");
+      }
+    } catch (error) {
+      setCleanupMessage("❌ Erreur lors du nettoyage");
+    } finally {
+      setCleaningUp(false);
+      setTimeout(() => setCleanupMessage(""), 5000);
     }
   };
 
@@ -186,6 +212,53 @@ export default function AdminDashboard() {
                 <XCircle className="h-8 w-8 text-red-500" />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Section Comptes non vérifiés */}
+        {stats && (stats.totalUnverified || 0) > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Comptes non vérifiés
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {stats.totalUnverified} compte(s) non vérifié(s) au total
+                  {stats.unverifiedAccounts && stats.unverifiedAccounts > 0 && (
+                    <span className="text-amber-600 font-semibold">
+                      {" "}
+                      ({stats.unverifiedAccounts} expiré(s) depuis plus de 7
+                      jours)
+                    </span>
+                  )}
+                </p>
+              </div>
+              {stats.unverifiedAccounts && stats.unverifiedAccounts > 0 && (
+                <button
+                  onClick={cleanupUnverifiedAccounts}
+                  disabled={cleaningUp}
+                  className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 text-sm font-semibold"
+                >
+                  {cleaningUp ? "Nettoyage..." : "Nettoyer les comptes expirés"}
+                </button>
+              )}
+            </div>
+            {cleanupMessage && (
+              <p
+                className={`text-sm ${
+                  cleanupMessage.startsWith("✅")
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {cleanupMessage}
+              </p>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              Les comptes non vérifiés créés il y a plus de 7 jours peuvent être
+              supprimés automatiquement.
+            </p>
           </div>
         )}
 
