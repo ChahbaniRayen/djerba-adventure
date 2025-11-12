@@ -580,6 +580,34 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       return token;
     },
+    async redirect({ url, baseUrl }) {
+      // Sur Vercel, utiliser NEXTAUTH_URL si disponible, sinon baseUrl
+      const vercelUrl = process.env.NEXTAUTH_URL || baseUrl;
+
+      // Si l'URL est relative, la convertir en absolue
+      if (url.startsWith("/")) {
+        // S'assurer que vercelUrl ne se termine pas par un slash
+        const cleanBaseUrl = vercelUrl.replace(/\/$/, "");
+        return `${cleanBaseUrl}${url}`;
+      }
+
+      // Si l'URL est absolue, vérifier qu'elle est sur le même domaine
+      try {
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(vercelUrl);
+
+        // Si même origine, autoriser
+        if (urlObj.origin === baseUrlObj.origin) {
+          return url;
+        }
+      } catch (error) {
+        // Si l'URL n'est pas valide, utiliser la base
+        console.error("[AUTH] Erreur lors de la validation de l'URL:", error);
+      }
+
+      // Par défaut, rediriger vers la page d'accueil
+      return vercelUrl.replace(/\/$/, "") || "/";
+    },
   },
   pages: {
     signIn: "/auth/signin",
