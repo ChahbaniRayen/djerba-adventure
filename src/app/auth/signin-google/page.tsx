@@ -17,18 +17,12 @@ export default function SignInGooglePage() {
     // Rediriger directement vers Google OAuth avec gestion d'erreur
     const handleSignIn = async () => {
       try {
-        const result = await signIn("google", {
+        // Avec redirect: true, signIn ne retourne rien (void)
+        // La redirection se fait automatiquement
+        await signIn("google", {
           callbackUrl: "/",
           redirect: true,
         });
-
-        // Si signIn retourne une erreur (ne devrait pas arriver avec redirect: true)
-        if (result?.error) {
-          setError("Erreur lors de la connexion. Veuillez réessayer.");
-          setTimeout(() => {
-            router.push("/auth/signin");
-          }, 3000);
-        }
       } catch (err) {
         console.error("Erreur lors de la connexion Google:", err);
         setError("Une erreur est survenue. Redirection...");

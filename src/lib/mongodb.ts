@@ -2,29 +2,30 @@ import mongoose from "mongoose";
 
 const MONGO_URI = process.env.MONGO_URI as string;
 
-if (!MONGO_URI) {
-  const errorMsg =
-    process.env.NODE_ENV === "production"
-      ? "⚠️ MONGO_URI is not defined. Please add it to Vercel Environment Variables."
-      : "⚠️ Please add your MongoDB URI to .env.local";
-  throw new Error(errorMsg);
-}
-
-// Vérifier si c'est localhost en production
-if (process.env.NODE_ENV === "production" && MONGO_URI.includes("localhost")) {
-  console.error("❌ ERREUR CRITIQUE: Vous utilisez localhost en production !");
-  console.error("❌ Vercel ne peut pas accéder à localhost.");
-  console.error("❌ Vous DEVEZ utiliser MongoDB Atlas (cloud).");
-  console.error("❌ Consultez GUIDE-MONGODB-ATLAS.md pour la configuration.");
-  throw new Error(
-    "MONGO_URI ne peut pas être localhost en production. Utilisez MongoDB Atlas."
-  );
-}
-
 let isConnected = false;
 
 export const connectDB = async () => {
   if (isConnected) return;
+
+  // Valider MONGO_URI au moment de la connexion (runtime, pas au build)
+  if (!MONGO_URI) {
+    const errorMsg =
+      process.env.NODE_ENV === "production"
+        ? "⚠️ MONGO_URI is not defined. Please add it to Vercel Environment Variables."
+        : "⚠️ Please add your MongoDB URI to .env.local";
+    throw new Error(errorMsg);
+  }
+
+  // Vérifier si c'est localhost en production (uniquement au runtime)
+  if (process.env.NODE_ENV === "production" && MONGO_URI.includes("localhost")) {
+    console.error("❌ ERREUR CRITIQUE: Vous utilisez localhost en production !");
+    console.error("❌ Vercel ne peut pas accéder à localhost.");
+    console.error("❌ Vous DEVEZ utiliser MongoDB Atlas (cloud).");
+    console.error("❌ Consultez GUIDE-MONGODB-ATLAS.md pour la configuration.");
+    throw new Error(
+      "MONGO_URI ne peut pas être localhost en production. Utilisez MongoDB Atlas."
+    );
+  }
 
   try {
     await mongoose.connect(MONGO_URI);

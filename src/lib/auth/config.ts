@@ -15,11 +15,10 @@ let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
 // Utiliser MONGO_URI pour être cohérent avec mongodb.ts
-const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || "";
 
-if (!mongoUri) {
-  throw new Error("MONGO_URI ou MONGODB_URI doit être défini");
-}
+// Ne pas vérifier au build, seulement au runtime lors de la connexion
+// La vérification se fera dans connectDB() et lors de la création du client
 
 if (process.env.NODE_ENV === "development") {
   // En développement, utiliser une variable globale pour éviter les multiples connexions
